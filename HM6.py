@@ -1,6 +1,7 @@
+import sys
+
 import os
 from pathlib import Path
-import sys
 import shutil
 
 # create a dictionary of folders and extensions
@@ -27,7 +28,6 @@ def ext_dict_normalize(files_dict):
     :param files_dict: dict
     :return: lower values in dict
     """
-    global FILES_DICT
     for key, values in files_dict.items():
         for i in range(len(values)):
             values[i] = values[i].lower()
@@ -76,7 +76,7 @@ def file_handler(path: Path):
             else:
                 # move file to destination folder
                 shutil.move(str(path), new_file_path)
-    # если расширения нет в словаре создаем список неизвестных расширений
+    # if the extension is not in the dictionary, create a list of unknown extensions
     if not check_known:
         result_dict['unknown'].append(file_ext)
 
@@ -87,19 +87,19 @@ def get_dir_elements(path: Path):
     :param path: path
     :return: None
     """
-    for el in path.iterdir():
-        # если файл:
-        if el.is_file():
-            file_handler(el)  # do file processing
-        # если папка:
-        if el.is_dir():
-            if el.name in FILES_DICT.keys():  # do not touch folders from the dictionary
+    for element in path.iterdir():
+        # if file:
+        if element.is_file():
+            file_handler(element)  # do file processing
+        # if folder:
+        if element.is_dir():
+            if element.name in FILES_DICT:  # do not touch folders from the dictionary
                 continue
             # empty folder check
-            if not os.listdir(str(el)):
-                os.rmdir(str(el))  # delete folder
+            if not os.listdir(str(element)):
+                os.rmdir(str(element))  # delete folder
                 continue
-            get_dir_elements(el)
+            get_dir_elements(element)
 
 
 def remove_empty_folder(path: Path):
@@ -108,12 +108,12 @@ def remove_empty_folder(path: Path):
     :param path: path
     :return: None
     """
-    for el in path.iterdir():
-        if el.is_dir():
-            if not os.listdir(str(el)):
-                os.rmdir(str(el))  # delete folder
+    for element in path.iterdir():
+        if element.is_dir():
+            if not os.listdir(str(element)):
+                os.rmdir(str(element))  # delete folder
                 continue
-            remove_empty_folder(el)
+            remove_empty_folder(element)
 
 
 def normalize(name: str):
@@ -126,13 +126,13 @@ def normalize(name: str):
     cyrillic_symbols = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяєіїґ"
     translation = ("a", "b", "v", "g", "d", "e", "e", "j", "z", "i", "j", "k", "l", "m", "n", "o", "p", "r", "s", "t",
                    "u", "f", "h", "ts", "ch", "sh", "sch", "", "y", "", "e", "yu", "ya", "je", "i", "ji", "g")
-    trans = {}
+    translation_dict = {}
 
     for c, l in zip(cyrillic_symbols, translation):
-        trans[ord(c)] = l
-        trans[ord(c.upper())] = l.upper()
+        translation_dict[ord(c)] = l
+        translation_dict[ord(c.upper())] = l.upper()
 
-    name = name.translate(trans)
+    name = name.translate(translation_dict)
     for i, letter in enumerate(name):
         if not letter.isalpha() and not letter.isnumeric():
             name = name.replace(letter, '_')
@@ -160,8 +160,11 @@ def main(path):
 if __name__ == '__main__':
     # create a variable with the name of the working folder
     base_folder = sys.argv[1]
-    # check if the specified folder exists
-    if not os.path.exists(base_folder):
-        print('Specified folder is not exist. Run again and change the folder')
+    if len(sys.argv) < 2:
+        print('Enter path to folder which should be cleaned')
+        exit()
+    # check if the specified folder exists and is folder
+    if not (os.path.exists(base_folder) and Path(base_folder).is_dir()):
+        print('Path incorrect')
         exit()
     main(base_folder)
